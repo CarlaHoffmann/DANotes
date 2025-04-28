@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Note } from '../interfaces/note.interface';
 import { AsyncPipe } from '@angular/common';
-import { Firestore, collectionData, collection, doc, onSnapshot, addDoc } from '@angular/fire/firestore';
+import { Firestore, collectionData, collection, doc, onSnapshot, addDoc, updateDoc } from '@angular/fire/firestore';
 import { Observable } from "rxjs";
 
 // interface Item {
@@ -35,6 +35,37 @@ export class NoteListService {
     this.unsubTrash = this.subTrashList();
   }
 
+
+  async updateNote(note: Note) {
+    if(note.id) { // evtl. Option Id leer berücksichtigen
+      let docRef = this.getSingleDocRef(this.getCollIdFromNote(note), note.id);
+      await updateDoc(docRef, this.getCleanJson(note)).catch(
+        (err) => { console.log(err); }
+      );
+    }
+  }
+
+  // da das note(jetzt: this.getCleanJson(note)) in updateNote(), updateDoc() 
+  // nicht genau definiert werden darf, 
+  // es dies aber für zB. note.id sein muss, 
+  // hier eine Hilfsfunktion um dies zu umgehen.
+  // Typisierung Json: any
+  getCleanJson(note: Note):{} { 
+    return {
+      type: note.type,
+      title: note.title,
+      content: note.content,
+      marked: note.marked,
+    }
+  }
+
+  getCollIdFromNote(note: Note):string {
+    if(note.type == 'note') {
+      return 'notes'
+    } else {
+      return 'trash'
+    }
+  }
 
   async addNote(item: Note) {
     await addDoc(this.getNotesRef(), item).catch(
